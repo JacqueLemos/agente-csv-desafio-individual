@@ -544,6 +544,34 @@ class CSVAgentHybrid:
         print("✅ Conclusões geradas com reasoning híbrido")
         return conclusions
 
+def get_basic_info(self) -> Dict:
+    """Retorna informações básicas do dataset"""
+    if self.current_df is None:
+        return {"error": "Nenhum dataset carregado"}
+    
+    df = self.current_df
+    
+    # Informações básicas
+    info = {
+        "linhas": df.shape[0],
+        "colunas": df.shape[1],
+        "colunas_nomes": list(df.columns),
+        "tipos_dados": df.dtypes.to_dict(),
+        "dados_faltantes": df.isnull().sum().to_dict(),
+        "memoria_mb": df.memory_usage(deep=True).sum() / 1024**2
+    }
+    
+    # Se tem coluna Class (fraude)
+    if 'Class' in df.columns:
+        fraud_count = df['Class'].sum()
+        info["fraude"] = {
+            "total_fraudes": int(fraud_count),
+            "taxa_fraude": float((fraud_count / len(df)) * 100),
+            "distribuicao": df['Class'].value_counts().to_dict()
+        }
+    
+    return info
+
 # Função de teste
 def test_hybrid_agent():
     """Testa o agente híbrido"""
