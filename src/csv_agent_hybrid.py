@@ -179,36 +179,75 @@ class HybridReasoning:
         
         # Fallback final: reasoning programático
         print("⚠️ Usando reasoning programático")
-        return self.programmatic_reasoning(prompt)
+        return self.programmatic_reasoning(prompt, getattr(self, 'current_analysis', None))
     
-    def programmatic_reasoning(self, prompt: str) -> str:
-        """Reasoning baseado em regras quando IA não está disponível"""
+    def programmatic_reasoning(self, prompt: str, analysis_data: DataAnalysis = None) -> str:
+        """Reasoning baseado em regras com dados reais"""
         prompt_lower = prompt.lower()
         
-        if "conclus" in prompt_lower or "insight" in prompt_lower:
-            return """📊 **Análise Programática:** Com base na análise dos dados, posso concluir que:
-            1. O dataset apresenta alta qualidade com zero valores faltantes
-            2. A taxa de fraude extremamente baixa (0.17%) é típica de cenários reais
-            3. As variáveis V1-V28 são transformações PCA que preservam privacidade
-            4. O dataset é ideal para desenvolvimento de modelos de detecção de fraudes
-            5. Recomenda-se técnicas de balanceamento para machine learning eficaz"""
+        if "outlier" in prompt_lower and analysis_data:
+            outlier_info = []
+            for col, data in analysis_data.outliers.items():
+                outlier_info.append(f"{col}: {data['count']:,} ({data['percentage']:.1f}%)")
+            
+            if outlier_info:
+                return f"""📊 **Análise de Outliers:** Detectados outliers em {len(outlier_info)} colunas:
+                {' | '.join(outlier_info[:5])}
+                
+                As variáveis V1-V28 com outliers podem indicar padrões atípicos relevantes para detecção de fraudes."""
         
-        elif "padr" in prompt_lower or "tendênc" in prompt_lower:
-            return """📈 **Análise de Padrões:** Os dados revelam padrões interessantes:
-            - Distribuição temporal uniforme das transações
-            - Baixas correlações entre variáveis (efeito PCA)
-            - Concentração de outliers em variáveis específicas
-            - Padrão típico de datasets de detecção de fraudes"""
+        elif "correlação" in prompt_lower and analysis_data and analysis_data.correlations is not None:
+            corr_matrix = analysis_data.correlations
+            max_corr = corr_matrix.abs().unstack().sort_values(ascending=False)
+            max_corr = max_corr[max_corr < 1.0].head(3)
+            
+            return f"""📈 **Análise de Correlação:** Principais correlações encontradas:
+            {' | '.join([f'{idx[0]}-{idx[1]}: {val:.3f}' for idx, val in max_corr.items()])}
+            
+            Baixas correlações confirmam eficácia da transformação PCA para preservar privacidade."""
         
-        elif "recomend" in prompt_lower:
-            return """💡 **Recomendações Técnicas:**
-            - Implementar balanceamento SMOTE para treinamento
-            - Focar em algoritmos de detecção de anomalias
-            - Monitorar variáveis com maior concentração de outliers
-            - Considerar ensemble methods para melhor performance"""
+        elif "fraude" in prompt_lower and analysis_data and analysis_data.fraud_indicators:
+            fraud_info = analysis_data.fraud_indicators
+            return f"""🚨 **Análise de Fraude:** 
+            - Total de fraudes: {fraud_info['fraud_count']:,} casos
+            - Taxa de fraude: {fraud_info['fraud_percentage']:.3f}%
+            - Transações normais: {fraud_info['normal_count']:,}
+            
+            Taxa extremamente baixa indica dataset real típico de sistemas de pagamento."""
+        
+        elif "dados faltantes" in prompt_lower and analysis_data:
+            missing_total = sum(analysis_data.missing_values.values())
+            if missing_total == 0:
+                return """✅ **Qualidade dos Dados:** Zero valores faltantes em todas as colunas.
+                Dataset de alta qualidade, pronto para análises sem necessidade de imputação."""
+            else:
+                missing_cols = {k: v for k, v in analysis_data.missing_values.items() if v > 0}
+                return f"""⚠️ **Dados Faltantes:** {missing_total:,} valores ausentes em {len(missing_cols)} colunas:
+                {' | '.join([f'{k}: {v}' for k, v in list(missing_cols.items())[:3]])}"""
+        
+        elif "conclus" in prompt_lower or "insight" in prompt_lower:
+            insights = []
+            if analysis_data:
+                if analysis_data.fraud_indicators:
+                    rate = analysis_data.fraud_indicators['fraud_percentage']
+                    insights.append(f"Taxa de fraude: {rate:.3f}% (típica de cenários reais)")
+                
+                missing_total = sum(analysis_data.missing_values.values())
+                if missing_total == 0:
+                    insights.append("Dataset limpo sem valores faltantes")
+                
+                outlier_cols = len([col for col, data in analysis_data.outliers.items() if data['count'] > 0])
+                insights.append(f"Outliers detectados em {outlier_cols} colunas")
+            
+            return f"""📊 **Conclusões Técnicas:**
+            {' | '.join(insights)}
+            
+            Recomendações: Usar técnicas de balanceamento para ML, focar em detecção de anomalias, 
+            monitorar variáveis com outliers para identificação de padrões fraudulentos."""
         
         else:
-            return """🔍 **Análise Automática:** Baseado nos dados analisados, o agente identifica características relevantes para tomada de decisão. O dataset apresenta qualidade adequada para análises avançadas e desenvolvimento de modelos de machine learning."""
+            return """🔍 **Análise Automática:** Dataset analisado com sucesso. 
+            Para insights específicos, pergunte sobre outliers, correlações, fraudes ou conclusões."""
 
 class CSVAgentHybrid:
     """Agente principal com reasoning híbrido"""
