@@ -259,7 +259,7 @@ if st.session_state.dataset_loaded and agent.current_df is not None:
         with col1:
             if st.button("🔥 Gerar Correlação", use_container_width=True):
                 with st.spinner("Gerando correlação..."):
-                    viz = agent.generate_correlation_plot()
+                    viz = agent.generate_visualization("correlation_heatmap")
                     if viz.startswith("data:image"):
                         st.image(viz, caption="Matriz de Correlação")
                     else:
@@ -268,7 +268,7 @@ if st.session_state.dataset_loaded and agent.current_df is not None:
         with col2:
             if 'fraude' in info and st.button("🚨 Análise de Fraude", use_container_width=True):
                 with st.spinner("Analisando fraudes..."):
-                    viz = agent.generate_fraud_plot()
+                    viz = agent.generate_visualization("fraud_analysis")
                     if viz.startswith("data:image"):
                         st.image(viz, caption="Análise de Fraudes")
                     else:
