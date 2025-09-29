@@ -179,7 +179,7 @@ class HybridReasoning:
         
         # Fallback final: reasoning programático
         print("⚠️ Usando reasoning programático")
-        return self.programmatic_reasoning(prompt, getattr(self, 'current_analysis', None))
+        return self.programmatic_reasoning(prompt)
     
     def programmatic_reasoning(self, prompt: str, analysis_data: DataAnalysis = None) -> str:
         """Reasoning baseado em regras com dados reais"""
