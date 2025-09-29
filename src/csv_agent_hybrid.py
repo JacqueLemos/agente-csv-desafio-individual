@@ -506,6 +506,8 @@ class CSVAgentHybrid:
         """
         
         # Usar reasoning híbrido
+        # Criar uma versão temporária do reasoning que tem acesso aos dados
+        self.reasoning.current_analysis = self.current_analysis
         ai_response = self.reasoning.query_with_fallback(data_context, system_prompt)
         
         # Verificar se precisa de visualização
